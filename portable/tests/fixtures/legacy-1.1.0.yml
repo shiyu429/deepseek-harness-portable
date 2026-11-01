@@ -1,0 +1,35 @@
+# Portable workspace grants stay on the drive; external folders use account access.
+- id: sandbox
+  config:
+    workspaceWriteEnabled: true
+    portableAclHelper: !!js process.env.DSH_PORTABLE_NATIVE_HELPER
+    portablePersistentRoot: !!js process.env.DSH_PORTABLE_ROOT
+- id: sandbox-policy
+  config:
+    mode: workspace-write
+- id: permission
+  config:
+    defaultPreset: workspace-write
+    portableWorkspaceRoot: !!js process.env.DSH_PORTABLE_ROOT
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+        description: 仅允许修改便携包内部的当前工作区；授权保留在 U 盘内，无需退出恢复。
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: ask
+        name: 当前账户权限
+        description: 可修改工作区及当前 Windows 账户有写入权限的其他位置，不限制在工作区内。
+- id: approval
+  config:
+    policy: ask
+- id: pwsh-sandbox
+  config:
+    pwshPath: !!js process.env.DSH_PORTABLE_PWSH
+- id: workspace-controller
+  config:
+    documentsDirectory: !!js process.env.DSH_PORTABLE_WORKSPACES
