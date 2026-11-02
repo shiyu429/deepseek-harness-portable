@@ -27,7 +27,9 @@ if(phase==='initial'){
   writeFileSync(join(base,'package/package.json'),JSON.stringify({name,version,main:'index.js',bin:{[name]:'cli.js'}}));
   writeFileSync(join(base,'package/index.js'),'module.exports='+JSON.stringify(name)+';\n');
   writeFileSync(join(base,'package/cli.js'),'#!/usr/bin/env node\nconsole.log('+JSON.stringify(name)+'+":ok");\n');
-  const tar=spawnSync('tar.exe',['-czf',join(root,'profile/vendor',name+'.tgz'),'-C',base,'package'],{encoding:'utf8',windowsHide:true});assert.equal(tar.status,0,tar.stderr);
+  // Windows tar uses the active code page for arguments on some clean hosts.
+  // Keep its arguments ASCII; the Unicode working directory is passed natively.
+  const tar=spawnSync('tar.exe',['-czf','../'+name+'.tgz','package'],{cwd:base,encoding:'utf8',windowsHide:true});assert.equal(tar.status,0,tar.stderr);
  }
 }
 const record=JSON.parse(readFileSync(owner));assert.equal(record.test,'pnpm-portability-v1');
