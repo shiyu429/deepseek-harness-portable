@@ -53,6 +53,26 @@ test('private runtime directory junctions are refused before writing host config
   }
 });
 
+test('first-start preparation remains retryable before the helper or data lock starts', () => {
+  const f = fixture();
+  try {
+    fakePackage(f.root);
+    const filename = join(f.root, 'portable.json');
+    const manifest = { ...JSON.parse(readFileSync(filename, 'utf8')), dataContract: 'fixture-v1' };
+    writeFileSync(filename, JSON.stringify(manifest));
+    core.prepare(f.root);
+    const stateFile = join(f.root, 'data/portable-state.json');
+    const first = readFileSync(stateFile, 'utf8');
+    assert.equal(JSON.parse(first).dataContract, 'fixture-v1');
+    // The first attempt can stop here, before rememberLocation or any helper.
+    core.prepare(f.root);
+    assert.equal(readFileSync(stateFile, 'utf8'), first);
+    writeFileSync(join(f.root, 'data/dsh/user.txt'), 'preserve existing data');
+    core.prepare(f.root);
+    assert.equal(readFileSync(join(f.root, 'data/dsh/user.txt'), 'utf8'), 'preserve existing data');
+  } finally { f.close(); }
+});
+
 test('location history persists across directory moves and refuses a mismatched data release', () => {
   const f = fixture();
   try {
