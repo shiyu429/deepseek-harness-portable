@@ -16,7 +16,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\portable\scripts\Build
 
 `packed-app/win-unpacked` 是内部 Electron 构建目录。构建最后将生成可交付的版本化程序目录，位置记录在 `delivery/build-result.json`。`node portable/scripts/verify-package.mjs` 校验内部打包文件及自带运行环境。用户运行便携版不需要构建所用的网络下载或编译工具。
 
-固定输入包括 `upstream/pnpm-lock.yaml`、`upstream/scripts/primary-runtime/lock.json`、`portable/upstream.lock.json`、`portable/msvc.lock.json`、`portable/extra-wheels.lock.json`、`portable/runtime-overrides.json` 和 `portable/production-pnpm-lock.yaml`。额外 Python wheel 逐项校验，npm 来自同一份锁定的官方 Node ZIP。刷新额外库需要显式运行 `scripts/capture-extra-wheels.py --refresh-lock`；普通构建冻结依赖锁。`refresh-runtime.mjs --refresh-lock` 是维护者明确修改源码后的更新操作，不用于普通重建。重建目标为相同源代码、版本和依赖集合；没有声称不同 Windows 构建环境能产生逐字节相同的 EXE/ZIP。
+固定输入包括 `upstream/pnpm-lock.yaml`、`upstream/scripts/primary-runtime/lock.json`、`portable/upstream.lock.json`、`portable/pnpm-yaml.lock.json`、`portable/msvc.lock.json`、`portable/extra-wheels.lock.json`、`portable/runtime-overrides.json` 和 `portable/production-pnpm-lock.yaml`。额外 Python wheel 逐项校验，npm 来自同一份锁定的官方 Node ZIP。刷新额外库需要显式运行 `scripts/capture-extra-wheels.py --refresh-lock`；普通构建冻结依赖锁。`refresh-runtime.mjs --refresh-lock` 是维护者明确修改源码后的更新操作，不用于普通重建。重建目标为相同源代码、版本和依赖集合；没有声称不同 Windows 构建环境能产生逐字节相同的 EXE/ZIP。
 
 ## 实现位置
 
@@ -48,9 +48,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\portable\scripts\Build
 完成必要的实际检查后，运行：
 
 ```powershell
-node portable/scripts/release.mjs --public --out=outputs/1.3.1
+node portable/scripts/release.mjs --public --out=outputs/1.3.3
 ```
 
 只生成最新完整版 ZIP 和 SHA256SUMS.txt；供 GitHub 提交的源码目录位置记录在 `delivery/public-source.json`。公开导出不携带用户 data、缓存、构建产物、内部交接文档或测试报告。正式上传前检查源码与归档清单。构建用的单元测试代码属于源码，实际机器检查记录只保存在本地。
 
 1.3.1 的程序槽位使用短路径 `app/bin`，程序版本和完整 SHA-256 保存在清单中。维护工具持有独占锁，先保存可续装状态，再替换程序；出现中断时阻止启动并继续安装。WindowsPaths.cs 对内部文件读写添加扩展路径前缀，公开路径和子进程参数保持普通绝对路径。组件不写系统长路径策略。ZIP 顶层目录名为 DSH；构建限制最长物理相对文件路径，Windows 路径回归测试使用未声明长路径支持的旧式 Win32 解压接口。
+
+## pnpm 搬迁回归检查
+
+`runtime/pnpm-portable.mjs` 使用固定 YAML 解析器兼容旧 `.modules.yaml`，仅重定位已登记项目内的 storeDir/virtualStoreDir；异常文档会明确失败。`core.cjs` 桌面修复保持 pnpm 11 原生 JSON 表示，保留不相关字段。独立解析器来自冻结生产依赖，版本与完整性记录在 `pnpm-yaml.lock.json`，随包携带其许可证。
+
+`tests/pnpm-portability.mjs` 使用真实自带 Node/pnpm、离线小包和 CLI 检查。可选 `--real-plugin` 安装 dsh-pet 0.4.0；独立夹具显式关闭 Host peer 的自动安装，不能替代实际桌面插件加载检查。`scripts/check-pnpm-fat32.ps1` 仅供管理员测试会话：新建自己拥有的 FAT32 VHD，更换两次空闲盘符并自动卸载，不选择现有磁盘。仓库的 Windows portable pnpm FAT32 工作流可手动运行，权限为空，不读取仓库凭据。VHD 验证不等于实体 U 盘或跨电脑验证。
