@@ -76,6 +76,8 @@ await cp(project, join(source, 'portable'), { recursive: true, filter: filename 
   const name = relative(project, filename).replaceAll('\\', '/');
   return name !== 'build' && !name.startsWith('build/') && name !== 'node_modules' && !name.startsWith('node_modules/') && (!publicRelease || (name !== 'PUBLISH-HANDOFF.md' && !name.startsWith('docs/测试报告')));
 } });
+await mkdir(join(source,'.github/workflows'),{recursive:true});
+await cp(join(project,'ci/windows-pnpm.yml'),join(source,'.github/workflows/windows-pnpm.yml'));
 const powershellBuild = join(source, 'portable/scripts/Build.ps1');
 await writeFile(powershellBuild, '\uFEFF' + (await readFile(powershellBuild, 'utf8')).replace(/^\uFEFF/, ''));
 await cp(join(project, 'README.md'), join(source, 'README.md'));

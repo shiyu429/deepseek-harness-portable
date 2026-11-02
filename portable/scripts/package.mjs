@@ -85,6 +85,12 @@ const primary = join(output, 'resources/runtime/primary-runtime/dependencies');
 await cp(resolve(project, 'runtime/python-sitecustomize.py'), join(primary, 'python/Lib/site-packages/sitecustomize.py'));
 await rename(join(primary, 'pnpm/bin/pnpm.mjs'), join(primary, 'pnpm/bin/pnpm-real.mjs'));
 await cp(resolve(project, 'runtime/pnpm-portable.mjs'), join(primary, 'pnpm/bin/pnpm.mjs'));
+// The standalone Node launcher cannot resolve packages inside Electron's ASAR.
+// Reuse the exact YAML dependency from the frozen production runtime, including its license.
+const metadataYaml = join(app,'.desktop-build/targets/win-x64/dsh/node_modules/yaml');
+const metadataYamlLock = JSON.parse(await readFile(join(project,'pnpm-yaml.lock.json'),'utf8'));
+if (JSON.parse(await readFile(join(metadataYaml,'package.json'),'utf8')).version !== metadataYamlLock.version) throw new Error('Review the pinned pnpm metadata YAML parser before updating it');
+await cp(metadataYaml,join(primary,'pnpm/dist/node_modules/yaml'),{recursive:true});
 await writeFile(join(primary, 'pnpm/bin/pnpm.cmd'), '@echo off\r\n"%~dp0..\\..\\node\\bin\\node.exe" "%~dp0pnpm.mjs" %*\r\nexit /b %errorlevel%\r\n');
 await writeFile(join(primary, 'python/Scripts/pip.cmd'), '@echo off\r\n"%~dp0..\\python.exe" -m pip %*\r\nexit /b %errorlevel%\r\n');
 console.log('Portable directory built:', output);

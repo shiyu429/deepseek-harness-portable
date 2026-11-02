@@ -30,6 +30,7 @@ function record(directory) {
 modules(path.join(root, 'resources/app.asar/node_modules'));
 modules(path.join(root, 'resources/app.asar/dsh/node_modules'));
 modules(path.join(root, 'resources/runtime/primary-runtime/dependencies/node/bin/node_modules'));
+modules(path.join(root, 'resources/runtime/primary-runtime/dependencies/pnpm/dist/node_modules'));
 const report = { format: 1, upstream: JSON.parse(fs.readFileSync(path.join(root, 'portable.json'), 'utf8')), npmPackages: [...items.values()].sort((a, b) => (a.name + a.version).localeCompare(b.name + b.version)), primaryRuntime: JSON.parse(fs.readFileSync(path.join(root, 'resources/runtime/primary-runtime/runtime.json'), 'utf8')), runtimeArchives: JSON.parse(fs.readFileSync(path.join(root, 'runtime-sources.json'), 'utf8')), microsoftRuntime: JSON.parse(fs.readFileSync(path.join(root, 'resources/portable/msvc-files.json'), 'utf8')) };
 fs.writeFileSync(process.argv[3], JSON.stringify(report, null, 2) + '\n');
 console.log('Inventoried production npm packages:', items.size);
