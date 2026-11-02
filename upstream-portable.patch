@@ -1369,27 +1369,27 @@ index ee722ef1..a98a891e 100644
    en: e681c83a7977404f
    zh: 618c04e09385c417
 diff --git a/packages/util/home-paths/README.md b/packages/util/home-paths/README.md
-index a21ebef6..13b02e65 100644
+index a21ebef6..d6013008 100644
 --- a/packages/util/home-paths/README.md
 +++ b/packages/util/home-paths/README.md
 @@ -26,6 +26,8 @@ English | [中文](README.zh.md)
  
  Use these helpers wherever a package must agree with the rest of the harness about where user data lives: resolve the home once, then derive every child path from it.
  
-+The portable build additionally resolves `dsh-portable:/` workspace references and historical paths against its package-location history. External workspaces require both the original computer and directory identity, stored under portable data; a matching path on another computer is insufficient. Missing or mismatched identities stop file operations until explicit folder selection records the actual location. Internal workspaces rebase automatically. `resolvePortablePath`, `encodePortablePath`, `rememberPortableWorkspace`, and `assertPortableWorkspaceIdentity` retain ordinary behavior when `DSH_PORTABLE_ROOT` is absent; portable data must not be shared with an unmodified npm installation.
++The portable build additionally resolves `dsh-portable:/` workspace references and historical paths against its package-location history. External workspaces require both the original computer and directory identity, stored under portable data; a matching path on another computer is insufficient. Missing or mismatched identities stop file operations until explicit folder selection records the actual location. Internal workspaces rebase automatically. The portable root uses the native filesystem spelling, so a differently cased Windows launch path still matches the canonical session cwd. `resolvePortablePath`, `encodePortablePath`, `rememberPortableWorkspace`, and `assertPortableWorkspaceIdentity` retain ordinary behavior when `DSH_PORTABLE_ROOT` is absent; portable data must not be shared with an unmodified npm installation.
 +
  ### Resolving the home
  
  ```ts
 diff --git a/packages/util/home-paths/README.zh.md b/packages/util/home-paths/README.zh.md
-index 43074baf..a6c8eabb 100644
+index 43074baf..40f6517c 100644
 --- a/packages/util/home-paths/README.zh.md
 +++ b/packages/util/home-paths/README.zh.md
 @@ -26,6 +26,8 @@ kind: "package-library"
  
  当包必须与 harness 的其他部分就用户数据存放位置达成一致时使用这些辅助函数：先解析一次主目录，再从中派生所有子路径。
  
-+便携构建还会根据程序位置记录解析 `dsh-portable:/` 工作区引用和历史路径。外部工作区必须同时匹配原电脑及目录身份，这些记录保存在便携 data 中；另一台电脑上存在相同路径并不足以通过检查。身份缺失或不匹配时停止文件操作，直到用户明确选择文件夹并记录实际位置。内部工作区自动按新位置解析。`resolvePortablePath`、`encodePortablePath`、`rememberPortableWorkspace`、`assertPortableWorkspaceIdentity` 在没有 `DSH_PORTABLE_ROOT` 时保留普通安装行为；不要让未修改的 npm 安装共享便携数据。
++便携构建还会根据程序位置记录解析 `dsh-portable:/` 工作区引用和历史路径。外部工作区必须同时匹配原电脑及目录身份，这些记录保存在便携 data 中；另一台电脑上存在相同路径并不足以通过检查。身份缺失或不匹配时停止文件操作，直到用户明确选择文件夹并记录实际位置。内部工作区自动按新位置解析。 便携根目录使用文件系统的原生规范路径，Windows 启动路径的大小写差异不会改变工作区与会话 cwd 的对应关系。`resolvePortablePath`、`encodePortablePath`、`rememberPortableWorkspace`、`assertPortableWorkspaceIdentity` 在没有 `DSH_PORTABLE_ROOT` 时保留普通安装行为；不要让未修改的 npm 安装共享便携数据。
 +
  ### 解析主目录
  
@@ -1591,6 +1591,38 @@ index 9d660471..17276168 100644
    if (!fullyQualifiedWorkspacePath(path)) {
      throw new TypeError(`Workspace path is not fully qualified: '${path}'`)
    }
+diff --git a/packages/workspace/workspace/tests/workspace.spec.ts b/packages/workspace/workspace/tests/workspace.spec.ts
+index 988e9995..fc5d05e8 100644
+--- a/packages/workspace/workspace/tests/workspace.spec.ts
++++ b/packages/workspace/workspace/tests/workspace.spec.ts
+@@ -192,6 +192,27 @@ afterEach(async () => {
+ })
+ 
+ describe('WorkspaceRegistry lifecycle and bootstrap', () => {
++  it.skipIf(process.platform !== 'win32')('attaches and restores a session in a portable-root workspace after a lowercase launch', async () => {
++    const dir = await makeDir('中文 workk')
++    const previousRoot = process.env.DSH_PORTABLE_ROOT
++    process.env.DSH_PORTABLE_ROOT = base.toLowerCase()
++    await mkdir(join(base, 'data'))
++    await writeFile(join(base, 'data/portable-state.json'), JSON.stringify({ format: 1, roots: [base] }))
++    try {
++      const result = await harness({ liveSessions: [header('portable', dir)] })
++      const workspace = await result.registry.create(dir)
++      await workspace.attachSession(SessionId('portable'))
++      expect(workspace.path).toBe(dir)
++      expect(workspace.sessionIds).toEqual(['portable'])
++      expect((await result.registry.create(dir)).id).toBe(workspace.id)
++      expect((await result.registry.resolveByPath(dir))?.id).toBe(workspace.id)
++      const restored = await harness({ pool: result.pool, sessions: [header('portable', dir)] })
++      expect(restored.registry.get(workspace.id)?.sessionIds).toEqual(['portable'])
++    } finally {
++      if (previousRoot === undefined) delete process.env.DSH_PORTABLE_ROOT
++      else process.env.DSH_PORTABLE_ROOT = previousRoot
++    }
++  })
+   it('stays pending without sessionPersistence and never opens or marks the domain', async () => {
+     const pool = new MemoryMediaPool()
+     const ctx = await storageContext(pool)
 diff --git a/packages/workspace/workspace/tsconfig.json b/packages/workspace/workspace/tsconfig.json
 index a4d55728..b6d6a600 100644
 --- a/packages/workspace/workspace/tsconfig.json
@@ -1829,11 +1861,11 @@ diff --git a/packages/util/home-paths/src/portable.ts b/packages/util/home-paths
 new file mode 100644
 --- /dev/null
 +++ b/packages/util/home-paths/src/portable.ts
-@@ -0,0 +1,173 @@
+@@ -0,0 +1,174 @@
 +/** Portable workspace references and runtime-only relocation of historical paths. */
 +import { createHash, randomUUID } from 'node:crypto'
 +import { execFileSync } from 'node:child_process'
-+import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
++import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 +import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 +
 +const PREFIX = 'dsh-portable:/'
@@ -1845,7 +1877,8 @@ new file mode 100644
 +
 +function portableRoot(): string | undefined {
 +  const root = process.env.DSH_PORTABLE_ROOT
-+  return root === undefined ? undefined : resolve(root)
++  // Match the realpath spelling used by workspace/session identity comparisons.
++  return root === undefined ? undefined : realpathSync.native(root)
 +}
 +
 +/**
@@ -2007,9 +2040,9 @@ diff --git a/packages/util/home-paths/tests/portable.spec.ts b/packages/util/hom
 new file mode 100644
 --- /dev/null
 +++ b/packages/util/home-paths/tests/portable.spec.ts
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,99 @@
 +import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
++import { mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 +import { join, resolve, relative, isAbsolute } from 'node:path'
 +import { resolvePortablePath, encodePortablePath, rememberPortableWorkspace, assertPortableWorkspaceIdentity } from '../src/portable.ts'
 +
@@ -2020,7 +2053,7 @@ new file mode 100644
 +beforeEach(() => {
 +  prior = { ...process.env }
 +  mkdirSync(fixtures as string, { recursive: true })
-+  root = mkdtempSync(join(fixtures as string, 'paths-'))
++  root = realpathSync(mkdtempSync(join(fixtures as string, 'paths-')))
 +  mkdirSync(join(root, 'data'))
 +  process.env.DSH_PORTABLE_ROOT = root
 +  process.env.DSH_PORTABLE_NATIVE_HELPER = helper
@@ -2035,6 +2068,13 @@ new file mode 100644
 +})
 +
 +describe.skipIf(process.platform !== 'win32' || !fixtures || !helper)('portable workspace paths', () => {
++  it('resolves a lowercase launch path to the canonical spelling used by session cwd', () => {
++    const folder = join(root, '中文 工作区')
++    mkdirSync(folder)
++    const canonical = realpathSync(folder)
++    process.env.DSH_PORTABLE_ROOT = root.toLowerCase()
++    expect(resolvePortablePath(encodePortablePath(canonical))).toBe(canonical)
++  })
 +  it('stores internal paths relatively and resolves historical roots without changing unrelated paths', () => {
 +    const folder = join(root, 'data', 'workspaces', '中文 project')
 +    mkdirSync(folder, { recursive: true })
