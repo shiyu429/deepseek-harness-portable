@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve, relative, isAbsolute } from 'node:path'
 import { resolvePortablePath, encodePortablePath, rememberPortableWorkspace, assertPortableWorkspaceIdentity } from '../src/portable.ts'
 
@@ -10,7 +10,7 @@ let prior: NodeJS.ProcessEnv
 beforeEach(() => {
   prior = { ...process.env }
   mkdirSync(fixtures as string, { recursive: true })
-  root = mkdtempSync(join(fixtures as string, 'paths-'))
+  root = realpathSync(mkdtempSync(join(fixtures as string, 'paths-')))
   mkdirSync(join(root, 'data'))
   process.env.DSH_PORTABLE_ROOT = root
   process.env.DSH_PORTABLE_NATIVE_HELPER = helper
@@ -25,6 +25,13 @@ afterEach(() => {
 })
 
 describe.skipIf(process.platform !== 'win32' || !fixtures || !helper)('portable workspace paths', () => {
+  it('resolves a lowercase launch path to the canonical spelling used by session cwd', () => {
+    const folder = join(root, '中文 工作区')
+    mkdirSync(folder)
+    const canonical = realpathSync(folder)
+    process.env.DSH_PORTABLE_ROOT = root.toLowerCase()
+    expect(resolvePortablePath(encodePortablePath(canonical))).toBe(canonical)
+  })
   it('stores internal paths relatively and resolves historical roots without changing unrelated paths', () => {
     const folder = join(root, 'data', 'workspaces', '中文 project')
     mkdirSync(folder, { recursive: true })
