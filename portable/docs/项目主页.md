@@ -1,4 +1,4 @@
-# DeepSeek Harness Portable · DSH便携版
+# DSH便携版 · DeepSeek Harness Portable
 
 **把 DeepSeek Harness 和运行环境一起带走。**
 
