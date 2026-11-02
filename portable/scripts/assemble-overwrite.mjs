@@ -18,12 +18,14 @@ export async function assembleOverwrite(product, { publicRelease = false } = {})
   const inventory = JSON.parse(await readFile(join(product, 'checksums.json'), 'utf8'));
   for (const item of inventory.files) if (item.path.endsWith('.cmd') && !item.path.includes('/')) await unlink(join(product, item.path));
   inventory.files = inventory.files.filter(item => !(item.path.endsWith('.cmd') && !item.path.includes('/')));
-  const infoFiles=['使用说明.md','依赖清单.json','LICENSE-DeepSeek-Harness.txt','LICENSE-Portable.txt','THIRD_PARTY_NOTICES.md','runtime-sources.json'];
+  const infoFiles=['依赖清单.json','LICENSE-DeepSeek-Harness.txt','LICENSE-Portable.txt','THIRD_PARTY_NOTICES.md','runtime-sources.json'];
   if(!publicRelease)infoFiles.push('测试报告.md');
   const infoStage=join(product,'.information-stage');await mkdir(infoStage);
   for(const file of infoFiles)await rename(join(product,file),join(infoStage,file));
+  // The public portable folder contains notices and sources, not the source-tree user guide.
+  try{await unlink(join(product,'使用说明.md'));}catch(error){if(error.code!=='ENOENT')throw error;}
   if(publicRelease){try{await unlink(join(product,'测试报告.md'));}catch(error){if(error.code!=='ENOENT')throw error;}}
-  inventory.files=inventory.files.filter(item=>!infoFiles.includes(item.path)&&(!publicRelease||item.path!=='测试报告.md'));
+  inventory.files=inventory.files.filter(item=>!infoFiles.includes(item.path)&&item.path!=='使用说明.md'&&(!publicRelease||item.path!=='测试报告.md'));
   const manifestEntry = inventory.files.find(item => item.path === 'portable.json');
   const manifestBytes = await readFile(join(product, 'portable.json'));
   Object.assign(manifestEntry, { bytes: manifestBytes.length, sha256: sha(manifestBytes) });

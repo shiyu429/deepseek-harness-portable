@@ -140,7 +140,7 @@ await cp(product, update, { recursive: true, filter: file => {
   return name !== 'data' && !name.startsWith('data/') && name !== 'backups' && !name.startsWith('backups/');
 } });
 await archive(update, `DSH-Portable-${version}-overwrite-update.zip`, true);
-for (const name of ['使用说明.md', '测试报告.md', '依赖清单.json']) await cp(join(product, 'app/说明与许可', name), join(output, name));
+for (const name of ['测试报告.md', '依赖清单.json']) await cp(join(product, 'app/说明与许可', name), join(output, name));
 }
 if(publicRelease)await writeFile(join(work,'delivery/public-source.json'),JSON.stringify({source,product,output,version},null,2));
 const sums = [];
