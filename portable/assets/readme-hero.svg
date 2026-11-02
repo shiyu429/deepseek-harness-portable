@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="DSH便携版：把工作，带在身边。">
+  <rect width="1200" height="360" rx="22" fill="#f4f5f1"/>
+  <g fill="none" stroke="#d8ded6"><path d="M800 0v360M920 0v360M1040 0v360M1160 0v360M760 60h440M760 180h440M760 300h440"/></g>
+  <circle cx="56" cy="48" r="4" fill="#20775c"/>
+  <g font-family="'Microsoft YaHei','Noto Sans SC','PingFang SC',sans-serif">
+    <text x="74" y="55" fill="#53645b" font-size="16" letter-spacing="2">DSH便携版 · DeepSeek Harness Portable</text>
+    <text x="50" y="155" fill="#14231e" font-size="66" font-weight="700">把工作，</text>
+    <text x="50" y="236" fill="#14231e" font-size="66" font-weight="700">带在身边。</text>
+    <text x="54" y="301" fill="#637169" font-size="19">一个文件夹，装下你的环境与下一程。</text>
+  </g>
+  <g transform="translate(854 91)">
+    <rect x="17" y="-14" width="213" height="211" rx="22" fill="#dce7df" stroke="#c3d2c8"/>
+    <rect y="4" width="213" height="211" rx="22" fill="#fcfdfa" stroke="#b8c9bd"/>
+    <path d="M0 66h213" fill="none" stroke="#d8e2d9"/>
+    <circle cx="24" cy="35" r="5" fill="#20775c"/>
+    <path d="M42 35h89" stroke="#c4d1c7" stroke-width="5" stroke-linecap="round"/>
+    <text x="25" y="136" font-family="'Segoe UI',sans-serif" font-size="54" font-weight="700" letter-spacing="-2" fill="#173e30">DSH</text>
+    <path d="M27 171h85M27 185h128" fill="none" stroke="#c3d4c7" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="190" cy="199" r="30" fill="#173e30" stroke="#f4f5f1" stroke-width="6"/>
+    <path d="M179 199h22m-8-8 8 8-8 8" fill="none" stroke="#fcfdfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
