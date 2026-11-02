@@ -41,7 +41,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\portable\scripts\Build
 
 `tests/` 包含启动和维护组件测试；上游路径测试在 `upstream/packages/util/home-paths/tests/portable.spec.ts`，官方模式及真实 Windows 权限验收在 `scripts/check-official-sandbox.mts`。桌面模拟服务及搬移验收在 `scripts/*probe.mjs`。只使用虚构密钥。
 
-许可与使用范围见本目录 `LICENSE`、官方 `upstream/LICENSE`、官方和各依赖的许可证，以及成品中文使用说明。本项目不是官方发行包。
+许可与使用范围见本目录 `LICENSE`、官方 `upstream/LICENSE`、官方和各依赖的许可证。使用方法见项目主页或源码中的 `docs/使用说明.md`，成品不附带使用说明。本项目不是官方发行包。
 
 ## 公开发行
 
