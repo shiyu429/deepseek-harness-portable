@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" role="img" aria-label="便携目录和权限选择示意图：程序与数据随盘保存；推荐 NTFS，FAT32 和 exFAT 使用当前账户权限。">
+  <rect width="1200" height="470" rx="22" fill="#f4f5f1"/>
+  <g font-family="'Microsoft YaHei','Noto Sans SC',sans-serif">
+    <text x="40" y="51" font-size="24" font-weight="700" fill="#173e30">程序随盘，数据随行，权限说清楚。</text>
+    <rect x="40" y="81" width="470" height="337" rx="16" fill="#fff" stroke="#d6ddd5"/>
+    <text x="66" y="123" font-size="24" font-weight="700" fill="#14231e">你的 DSH 文件夹</text>
+    <path d="M66 145h418" stroke="#e1e6df"/>
+    <text x="66" y="183" font-size="21" fill="#173e30">两个 EXE</text><text x="221" y="183" font-size="20" fill="#637169">应用入口 · 统一维护</text>
+    <text x="66" y="229" font-size="21" fill="#173e30">app /</text><text x="221" y="229" font-size="20" fill="#637169">程序 · 运行环境 · 许可证</text>
+    <text x="66" y="275" font-size="21" fill="#173e30">data /</text><text x="221" y="275" font-size="20" fill="#637169">聊天 · 配置 · 凭据 · 工作</text>
+    <rect x="65" y="315" width="420" height="76" rx="10" fill="#edf3ed"/>
+    <text x="84" y="346" font-size="20" fill="#173e30">完整退出后，复制整个文件夹。</text>
+    <text x="84" y="375" font-size="17" fill="#637169">电脑上的外部工作文件不会自动随行。</text>
+    <path d="M536 246h41m-10-10 10 10-10 10" fill="none" stroke="#87998c" stroke-width="2" stroke-linecap="round"/>
+    <rect x="605" y="81" width="555" height="154" rx="16" fill="#fff" stroke="#b8ccbc"/>
+    <rect x="1039" y="98" width="97" height="32" rx="16" fill="#173e30"/>
+    <text x="1060" y="120" font-size="17" fill="#fff">推荐</text>
+    <text x="632" y="125" font-size="26" font-weight="700" fill="#173e30">NTFS</text>
+    <text x="632" y="166" font-size="20" fill="#14231e">沿用官方权限模式及审批规则。</text>
+    <text x="632" y="201" font-size="18" fill="#637169">需要工作区写入边界时，运行盘与工作区均建议 NTFS。</text>
+    <rect x="605" y="257" width="555" height="161" rx="16" fill="#fff" stroke="#d6ddd5"/>
+    <text x="632" y="299" font-size="26" font-weight="700" fill="#14231e">FAT32 / exFAT</text>
+    <text x="632" y="342" font-size="20" fill="#14231e">默认标注「当前账户权限」，保留操作审批。</text>
+    <text x="632" y="378" font-size="18" fill="#637169">命令可访问账户允许的位置，范围不限于工作区。</text>
+  </g>
+</svg>
