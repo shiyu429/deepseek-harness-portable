@@ -26,13 +26,50 @@ static class UiKit {
 
 class CrispForm : Form {
     public float LayoutScale=1;
-    public void FitDpi(){float value;using(var g=CreateGraphics())value=g.DpiX/96f;ResizeDpi(value);}
-    void ResizeDpi(float value){if(value<=0||Math.Abs(value-LayoutScale)<0.01)return;float ratio=value/LayoutScale;LayoutScale=value;Scale(new SizeF(ratio,ratio));}
+    bool layoutReady;
+    Screen launchScreen;
+    Cursor handCursor;
+    IntPtr handHandle;
+    [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr window);
+    [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index,uint dpi);
+    [DllImport("user32.dll",SetLastError=true)] static extern IntPtr CopyImage(IntPtr image,uint type,int width,int height,uint flags);
+    [DllImport("user32.dll")] static extern bool DestroyCursor(IntPtr cursor);
+    public Cursor ActionCursor { get { return handCursor??Cursors.Hand; } }
+    public static Rectangle FitBounds(Rectangle proposed,Rectangle work,bool center) {
+        int mx=Math.Min(Math.Max(16,work.Width/20),work.Width/4),my=Math.Min(Math.Max(16,work.Height/20),work.Height/4);
+        int width=Math.Min(proposed.Width,Math.Max(1,work.Width-mx*2));
+        int height=Math.Min(proposed.Height,Math.Max(1,work.Height-my*2));
+        int x=center?work.Left+(work.Width-width)/2:Math.Max(work.Left+mx,Math.Min(proposed.Left,work.Right-mx-width));
+        int y=center?work.Top+(work.Height-height)/2:Math.Max(work.Top+my,Math.Min(proposed.Top,work.Bottom-my-height));
+        return new Rectangle(x,y,width,height);
+    }
+    public void FitDpi(){
+        launchScreen=Screen.FromPoint(Cursor.Position);StartPosition=FormStartPosition.Manual;
+        Location=launchScreen.WorkingArea.Location;
+        float value;try{value=GetDpiForWindow(Handle)/96f;}catch(EntryPointNotFoundException){using(var g=CreateGraphics())value=g.DpiX/96f;}
+        layoutReady=true;ResizeDpi(value);Place(launchScreen.WorkingArea,true);
+    }
+    void Place(Rectangle work,bool center){var target=FitBounds(Bounds,work,center);MinimumSize=new Size(Math.Min(MinimumSize.Width,target.Width),Math.Min(MinimumSize.Height,target.Height));Bounds=target;}
+    void ResizeDpi(float value){
+        if(value<=0)return;
+        if(Math.Abs(value-LayoutScale)>=0.01){var location=Location;float ratio=value/LayoutScale;LayoutScale=value;Scale(new SizeF(ratio,ratio));Location=location;}
+        var previous=handCursor;IntPtr previousHandle=handHandle;
+        int width,height;try{width=GetSystemMetricsForDpi(13,(uint)(value*96));height=GetSystemMetricsForDpi(14,(uint)(value*96));}catch(EntryPointNotFoundException){width=height=(int)Math.Round(32*value);}
+        handHandle=CopyImage(Cursors.Hand.Handle,2,width,height,0);
+        if(handHandle==IntPtr.Zero)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        handCursor=new Cursor(handHandle);
+        Action<Control> update=null;update=c=>{foreach(Control child in c.Controls){if(child.Cursor==Cursors.Hand||child.Cursor==previous)child.Cursor=ActionCursor;update(child);}};update(this);
+        if(previous!=null)previous.Dispose();if(previousHandle!=IntPtr.Zero)DestroyCursor(previousHandle);
+        OnDpiLayoutChanged();
+    }
+    protected virtual void OnDpiLayoutChanged() { }
+    protected override void OnShown(EventArgs e){base.OnShown(e);if(layoutReady)Place(launchScreen.WorkingArea,true);}
     [StructLayout(LayoutKind.Sequential)] struct DpiRect{public int Left,Top,Right,Bottom;}
     protected override void WndProc(ref Message message){
-        if(message.Msg==0x02E0){float dpi=(message.WParam.ToInt64()&0xffff)/96f;var rect=(DpiRect)Marshal.PtrToStructure(message.LParam,typeof(DpiRect));SuspendLayout();ResizeDpi(dpi);Bounds=Rectangle.FromLTRB(rect.Left,rect.Top,rect.Right,rect.Bottom);ResumeLayout();return;}
+        if(message.Msg==0x02E0&&layoutReady){float dpi=(message.WParam.ToInt64()&0xffff)/96f;var rect=(DpiRect)Marshal.PtrToStructure(message.LParam,typeof(DpiRect));SuspendLayout();ResizeDpi(dpi);Bounds=Rectangle.FromLTRB(rect.Left,rect.Top,rect.Right,rect.Bottom);Place(Screen.FromRectangle(Bounds).WorkingArea,false);ResumeLayout();return;}
         base.WndProc(ref message);
     }
+    protected override void Dispose(bool disposing){base.Dispose(disposing);if(disposing){if(handCursor!=null)handCursor.Dispose();if(handHandle!=IntPtr.Zero){DestroyCursor(handHandle);handHandle=IntPtr.Zero;}}}
 }
 
 // Standard flat buttons paint dark disabled text even on a black background.

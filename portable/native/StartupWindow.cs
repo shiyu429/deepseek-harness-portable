@@ -7,14 +7,14 @@ sealed class StartupWindow : IDisposable {
  readonly ManualResetEvent ready=new ManualResetEvent(false); CrispForm form; Label status; volatile bool disposed;
  public StartupWindow(){var thread=new Thread(()=>{try{
  Application.EnableVisualStyles();
- form=new CrispForm{Text="DSH Portable",ClientSize=new Size(480,290),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedSingle,ControlBox=false,BackColor=Color.White,ForeColor=Color.Black,AutoScaleDimensions=new SizeF(96,96),AutoScaleMode=AutoScaleMode.None,Font=new Font("Microsoft YaHei UI",10)};
+ form=new CrispForm{Text="DSH Portable",ClientSize=new Size(420,250),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedSingle,ControlBox=false,BackColor=Color.White,ForeColor=Color.Black,AutoScaleDimensions=new SizeF(96,96),AutoScaleMode=AutoScaleMode.None,Font=new Font("Microsoft YaHei UI",10)};
  form.Icon=UiKit.BrandIcon();
- form.Controls.Add(new PictureBox{Left=36,Top=38,Width=48,Height=48,SizeMode=PictureBoxSizeMode.Zoom,Image=UiKit.BrandImage()});
- form.Controls.Add(new Label{Text="DSH Portable",Left=104,Top=32,Width=335,Height=40,Font=new Font("Segoe UI",22,FontStyle.Bold),BackColor=Color.White});
- form.Controls.Add(new Label{Text="DeepSeek Harness · 便携版",Left=107,Top=77,Width=332,Height=25,ForeColor=Color.DimGray});
- form.Controls.Add(new LoadingRing{Left=36,Top=153,Width=32,Height=32});
- status=new Label{Text="正在准备启动",Left=87,Top=157,Width=355,Height=29,AutoEllipsis=true,BackColor=Color.White};form.Controls.Add(status);
- form.Controls.Add(new Label{Text="你的工作，随盘继续。",Left=37,Top=232,Width=390,Height=24,ForeColor=Color.Gray,Font=new Font("Microsoft YaHei UI",9)});
+ form.Controls.Add(new PictureBox{Left=28,Top=30,Width=44,Height=44,SizeMode=PictureBoxSizeMode.Zoom,Image=UiKit.BrandImage()});
+ form.Controls.Add(new Label{Text="DSH Portable",Left=90,Top=27,Width=302,Height=36,Font=new Font("Segoe UI",20,FontStyle.Bold),BackColor=Color.White});
+ form.Controls.Add(new Label{Text="DeepSeek Harness · 便携版",Left=92,Top=68,Width=295,Height=25,ForeColor=Color.DimGray});
+ form.Controls.Add(new LoadingRing{Left=28,Top=132,Width=32,Height=32});
+ status=new Label{Text="正在准备启动",Left=76,Top=135,Width=316,Height=29,AutoEllipsis=true,BackColor=Color.White};form.Controls.Add(status);
+ form.Controls.Add(new Label{Text="你的工作，随盘继续。",Left=29,Top=204,Width=360,Height=24,ForeColor=Color.Gray,Font=new Font("Microsoft YaHei UI",9)});
  form.FitDpi();form.FormClosing+=(s,e)=>{if(!disposed)e.Cancel=true;};form.Shown+=(s,e)=>ready.Set();Application.Run(form);}catch(Exception error){disposed=true;ready.Set();Console.Error.WriteLine("启动界面："+error.Message);}
  });thread.IsBackground=true;thread.SetApartmentState(ApartmentState.STA);thread.Start();ready.WaitOne(5000);}
  public void Update(string message,int completed=0,int total=0){if(disposed||form==null||!form.IsHandleCreated)return;try{form.BeginInvoke(new Action(()=>status.Text=message));}catch(InvalidOperationException){}}
