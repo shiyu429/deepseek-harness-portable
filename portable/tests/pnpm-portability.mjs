@@ -41,7 +41,7 @@ const home=join(root,'home');mkdirSync(home,{recursive:true});
 for(const n of ['npmrc','npmrc-global'])writeFileSync(join(home,n),n==='npmrc'?'auto-install-peers=false\n':'');
 const env={...process.env,HOME:home,USERPROFILE:home,APPDATA:home,LOCALAPPDATA:home,TEMP:home,TMP:home,PNPM_HOME:join(home,'pnpm'),npm_config_userconfig:join(home,'npmrc'),npm_config_globalconfig:join(home,'npmrc-global'),npm_config_manage_package_manager_versions:'false',PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS:'false',NO_UPDATE_NOTIFIER:'1',CI:'true'};
 delete env.ELECTRON_RUN_AS_NODE;delete env.NODE_OPTIONS;delete env.NODE_PATH;
-function run(params){const r=spawnSync(node,[wrapper,...params],{cwd:profile,env,encoding:'utf8',windowsHide:true,timeout:90000});assert.equal(r.status,0,(r.stdout||'')+'\n'+(r.stderr||r.error?.message||''));return r.stdout;}
+function run(params){const r=spawnSync(node,[wrapper,'--config.auto-install-peers=false',...params],{cwd:profile,env,encoding:'utf8',windowsHide:true,timeout:90000});assert.equal(r.status,0,(r.stdout||'')+'\n'+(r.stderr||r.error?.message||''));return r.stdout;}
 function requirePkg(name){const r=spawnSync(node,['-p','require('+JSON.stringify(name)+')'],{cwd:profile,env,encoding:'utf8',windowsHide:true});assert.equal(r.status,0,r.stderr);assert.equal(r.stdout.trim(),name);}
 if(phase==='initial')run(['add','./vendor/portable-cli-one.tgz','--offline','--ignore-scripts','--reporter=append-only']);
 else{
