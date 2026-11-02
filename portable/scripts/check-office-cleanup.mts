@@ -2,15 +2,15 @@
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { join, relative, isAbsolute } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { AclSandbox, workspaceWriteSid, tempWriteSid } from '../../d/packages/sandbox/sandbox-windows-acl/src/index.ts'
+import { AclSandbox, workspaceWriteSid, tempWriteSid } from '../../upstream/packages/sandbox/sandbox-windows-acl/src/index.ts'
 import { work } from './environment.mjs'
 import assert from 'node:assert/strict'
 const root = mkdtempSync(join(work, 'qa/office-cleanup-')), temp = join(root, 'temp'), workspace = join(root, 'workspace')
 mkdirSync(temp); mkdirSync(workspace)
 mkdirSync(join(workspace,'images'))
 mkdirSync(join(workspace,'existing-files'));writeFileSync(join(workspace,'existing-files','keep.txt'),'user content')
-const kit = join(work, 'd/apps/desktop/.desktop-build/targets/win-x64/dsh/node_modules/@deepseek-ai/libreoffice-kit/lib/index.js')
-const input = join(work, 'd/scripts/fixtures/office-render/color-blocks.docx')
+const kit = join(work, 'upstream/apps/desktop/.desktop-build/targets/win-x64/dsh/node_modules/@deepseek-ai/libreoffice-kit/lib/index.js')
+const input = join(work, 'upstream/scripts/fixtures/office-render/color-blocks.docx')
 const script = join(workspace, 'probe.mjs')
 writeFileSync(script, `import {createConverter} from ${JSON.stringify(pathToFileURL(kit).href)};
 import fs from 'node:fs';

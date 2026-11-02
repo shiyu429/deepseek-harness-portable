@@ -2,8 +2,8 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { resolve, join } from 'node:path'
-import { smokeDesktopRuntime } from '../../d/apps/desktop/scripts/smoke-runtime.ts'
-import type { DesktopRuntimeDescriptor } from '../../d/apps/desktop/src/runtime-tree.ts'
+import { smokeDesktopRuntime } from '../../upstream/apps/desktop/scripts/smoke-runtime.ts'
+import type { DesktopRuntimeDescriptor } from '../../upstream/apps/desktop/src/runtime-tree.ts'
 const require = createRequire(import.meta.url)
 const core = require('../runtime/core.cjs') as typeof import('../runtime/core.cjs')
 const root = resolve(process.argv[2] as string)

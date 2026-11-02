@@ -3,9 +3,9 @@ import { cpSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'no
 import { spawnSync } from 'node:child_process'
 import { resolve, join } from 'node:path'
 import { createRequire } from 'node:module'
-import { createRuntimeProjectMetadata } from '../../d/apps/desktop/src/project-manager.ts'
-import { prepareRuntimePatches } from '../../d/apps/desktop/scripts/prepare-runtime-patches.ts'
-import { parseDesktopRelease } from '../../d/apps/desktop/src/release.ts'
+import { createRuntimeProjectMetadata } from '../../upstream/apps/desktop/src/project-manager.ts'
+import { prepareRuntimePatches } from '../../upstream/apps/desktop/scripts/prepare-runtime-patches.ts'
+import { parseDesktopRelease } from '../../upstream/apps/desktop/src/release.ts'
 import { project, work, upstream, pnpm, buildEnvironment } from './environment.mjs'
 const { load, dump } = createRequire(resolve(upstream, 'package.json'))('js-yaml') as { load: (text: string) => unknown; dump: (value: unknown) => string }
 const target = resolve(upstream, 'apps/desktop/.desktop-build/targets/win-x64')

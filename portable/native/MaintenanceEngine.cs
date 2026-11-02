@@ -8,6 +8,9 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
+using File = WindowsFile;
+using Directory = WindowsDirectory;
+using FileStream = WindowsFileStream;
 
 static class MaintenanceEngine {
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 64 * 1024 * 1024 };
@@ -36,7 +39,7 @@ static class MaintenanceEngine {
         string temporary = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try {
             using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None)) { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
-            if (!MoveFileExW(temporary, file, 9)) throw new IOException("文件正被占用，原文件未被替换。", new System.ComponentModel.Win32Exception());
+            if (!MoveFileExW(WindowsPaths.Extended(temporary), WindowsPaths.Extended(file), 9)) throw new IOException("文件正被占用，原文件未被替换。", new System.ComponentModel.Win32Exception());
         } finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
     static void AtomicJson(string file, object value) { Atomic(file, new UTF8Encoding(false).GetBytes(Json.Serialize(value))); }
@@ -52,9 +55,9 @@ static class MaintenanceEngine {
         root = Path.GetFullPath(root); archive = Path.GetFullPath(archive);
         using (var locks = new Locks(root)) {
             bool replacingPending = File.Exists(Pending(root));
-            if(replacingPending)throw new IOException("已有未完成的安装，请继续安装；不会创建重复任务。");
+            if(replacingPending&&CanResume(root))throw new IOException("已有未完成的安装，请继续安装；不会创建重复任务。");
             string updates = Path.Combine(root, "app/.updates"); Directory.CreateDirectory(updates); Launcher.NoLinks(updates, root);
-            CleanCache(root);
+            if(!replacingPending)CleanCache(root);
             string stage = Path.Combine(updates, "stage-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(stage);
             AtomicJson(stage + ".owner.json", new { format = 1, root = root, stage = stage });
             if (progress != null) progress("正在检查更新包");
@@ -107,6 +110,20 @@ static class MaintenanceEngine {
             if(!inPlace)StartWorker(root, transaction); return transaction;
         }
     }
+    static bool CanResume(string root) {
+        try {
+            Launcher.NoLinks(Pending(root),root);
+            string transaction=Launcher.Text(Launcher.Read(Pending(root)),"transaction");ValidateTransactionPath(root,transaction);
+            var record=Launcher.Read(transaction);string stage=Path.GetFullPath(Launcher.Text(record,"stage"));
+            string updates=Path.GetFullPath(Path.Combine(root,"app/.updates"))+Path.DirectorySeparatorChar;
+            if(!stage.StartsWith(updates,StringComparison.OrdinalIgnoreCase))return false;
+            Launcher.NoLinks(stage,root);var pointer=Launcher.Read(Path.Combine(stage,"app/portable.json"));
+            string name=Launcher.Text(pointer,"program"),source=Launcher.Safe(stage,name);
+            if(Directory.Exists(source)){ValidateRootFiles(stage);Launcher.VerifyProgram(stage,pointer,null,false);}
+            else{Launcher.VerifyProgram(root,pointer,Launcher.Safe(root,name),true);ValidateRootFiles(stage,root);}
+            return true;
+        }catch(Exception){return false;}
+    }
     static void ValidateRootFiles(string stage, string installedRoot = null) {
         var index = Launcher.Read(Path.Combine(stage, "app/checksums.json"));
         var pointer = Launcher.Read(Path.Combine(stage, "app/portable.json"));
@@ -118,7 +135,7 @@ static class MaintenanceEngine {
             if (!Allowed(name, program) || !seen.Add(name)) throw new IOException("更新包校验条目无效。");
             if (installedRoot != null && name.StartsWith(program + "/", StringComparison.Ordinal)) file = Launcher.Safe(installedRoot, name);
             Launcher.NoLinks(file, installedRoot != null && name.StartsWith(program + "/", StringComparison.Ordinal) ? installedRoot : stage);
-            if (!File.Exists(file) || new FileInfo(file).Length != Convert.ToInt64(record["bytes"]) || Launcher.Hash(file) != Launcher.Text(record, "sha256")) throw new IOException("更新包校验未通过：" + name);
+            if (!File.Exists(file) || WindowsPaths.Length(file) != Convert.ToInt64(record["bytes"]) || Launcher.Hash(file) != Launcher.Text(record, "sha256")) throw new IOException("更新包校验未通过：" + name);
         }
         foreach (string name in new[] { "DSH Portable.exe", "DSH 维护工具.exe", "app/portable.json", program + "/checksums.json" }) if (!seen.Contains(name)) throw new IOException("更新包校验清单缺少必要文件：" + name);
         foreach (string file in Directory.GetFiles(stage, "*", SearchOption.AllDirectories)) {
@@ -174,14 +191,16 @@ static class MaintenanceEngine {
         foreach(var directory in candidates.Distinct(StringComparer.OrdinalIgnoreCase)) {
             if(Path.GetFullPath(directory).Equals(Path.GetFullPath(current),StringComparison.OrdinalIgnoreCase))continue;
             bool replaced=Path.GetFullPath(Path.GetDirectoryName(directory)).Equals(Path.GetFullPath(updates),StringComparison.OrdinalIgnoreCase)&&System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileName(directory),@"\Areplaced-[a-f0-9]{32}\z");
-            if(!replaced&&!System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileName(directory),@"\A\d+\.\d+\.\d+-[a-f0-9]{16}\z"))continue;
+            bool compact=Path.GetFileName(directory)=="bin";
+            if(!replaced&&!compact&&!System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileName(directory),@"\A\d+\.\d+\.\d+-[a-f0-9]{16}\z"))continue;
             if(!Path.GetFullPath(Path.GetDirectoryName(directory)).Equals(Path.GetFullPath(replaced?updates:Path.Combine(root,"app")),StringComparison.OrdinalIgnoreCase))continue;
             try{if(!Directory.Exists(directory)&&owned.ContainsKey(directory)){Launcher.NoLinks(Path.GetDirectoryName(directory),root);File.Delete(owned[directory]);continue;}Launcher.NoLinks(directory,root);
                 if(!owned.ContainsKey(directory)){
                 var manifest=Launcher.Read(Path.Combine(directory,"portable.json"));
                 if(!manifest.ContainsKey("payloadLayout")||!Launcher.FormatOne(manifest["payloadLayout"]))continue;
                 if(Launcher.Text(manifest,"dataContract")!=Launcher.Text(Launcher.Read(Path.Combine(current,"portable.json")),"dataContract")||Directory.Exists(Path.Combine(directory,"data")))continue;
-                if(!replaced&&Path.GetFileName(directory)!=Launcher.Text(manifest,"portableVersion")+"-"+Launcher.Hash(Path.Combine(directory,"checksums.json")).Substring(0,16))continue;
+                if(compact&&(!manifest.ContainsKey("programLayout")||Launcher.Text(manifest,"programLayout")!="compact-1"))continue;
+                if(!replaced&&!compact&&Path.GetFileName(directory)!=Launcher.Text(manifest,"portableVersion")+"-"+Launcher.Hash(Path.Combine(directory,"checksums.json")).Substring(0,16))continue;
                 string owner=Path.Combine(updates,"delete-"+Guid.NewGuid().ToString("N")+".json");
                 AtomicJson(owner,new{format=1,root=root,folder=Path.GetFullPath(directory),dataContract=Launcher.Text(manifest,"dataContract")});owned[directory]=owner;
                 }

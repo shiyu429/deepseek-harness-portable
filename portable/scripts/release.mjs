@@ -12,8 +12,9 @@ const output = resolve(outputArgument.slice(6));
 const distribution = resolve(work, 'packed-app/win-unpacked');
 const version = JSON.parse(await readFile(join(project, 'package.json'), 'utf8')).version;
 const publicRelease=process.argv.includes('--public');
+if(JSON.parse(await readFile(join(distribution,'portable.json'),'utf8')).portableVersion!==version)throw new Error('Packaged version differs from the source version.');
 const stage = resolve(work, 'delivery', 'run-' + version + '-' + Date.now());
-const productName = `DSH-Portable-${version}-win-x64`;
+const productName = 'DSH';
 const sourceName = `DSH-Portable-${version}-source`;
 const product = join(stage, productName), source = join(stage, sourceName);
 await mkdir(stage, { recursive: true }); await mkdir(output, { recursive: true });
@@ -62,12 +63,12 @@ if (process.argv.includes('--stage-only')) {
   console.log('STAGED_OVERWRITE_PACKAGE', product); process.exit(0);
 }
 
-await mkdir(join(source, 'd'), { recursive: true });
+await mkdir(join(source, 'upstream'), { recursive: true });
 const listed = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: upstream, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split('\0').filter(name => name && !name.startsWith('apps/desktop/portable/'));
 for (const name of listed) {
-  const from = resolve(upstream, name), target = resolve(source, 'd', name);
+  const from = resolve(upstream, name), target = resolve(source, 'upstream', name);
   const within = relative(upstream, from);
-  if (within.startsWith('..') || relative(join(source, 'd'), target).startsWith('..')) throw new Error('Invalid tracked source path');
+  if (within.startsWith('..') || relative(join(source, 'upstream'), target).startsWith('..')) throw new Error('Invalid tracked source path');
   try { await access(from); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
   await mkdir(dirname(target), { recursive: true }); await cp(from, target);
 }

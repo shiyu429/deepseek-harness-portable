@@ -35,6 +35,21 @@ class CrispForm : Form {
     }
 }
 
+// Standard flat buttons paint dark disabled text even on a black background.
+// Draw both states explicitly so labels remain readable during an operation.
+sealed class ActionButton : Button {
+    public bool Primary;
+    public ActionButton() { SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true); }
+    protected override void OnPaint(PaintEventArgs e) {
+        Color background = Primary ? (Enabled ? Color.Black : Color.FromArgb(52,52,52)) : Color.White;
+        Color foreground = Primary ? (Enabled ? Color.White : Color.WhiteSmoke) : (Enabled ? Color.Black : Color.DimGray);
+        e.Graphics.Clear(background);
+        if (!Primary) using (var pen = new Pen(Color.Gainsboro)) e.Graphics.DrawRectangle(pen,0,0,Width-1,Height-1);
+        TextRenderer.DrawText(e.Graphics, Text, Font, ClientRectangle, foreground, background, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+        if (Focused && ShowFocusCues && Enabled) ControlPaint.DrawFocusRectangle(e.Graphics,Rectangle.Inflate(ClientRectangle,-4,-4),foreground,background);
+    }
+}
+
 sealed class LoadingRing : Control {
     readonly Timer timer;
     float angle;

@@ -5,7 +5,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 
 export const project = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const work = resolve(project, '..');
-export const upstream = resolve(work, 'd');
+export const upstream = resolve(work, 'upstream');
 export const pnpm = resolve(work, 'tools', 'pnpm', 'package', 'bin', 'pnpm.mjs');
 
 export async function buildEnvironment() {

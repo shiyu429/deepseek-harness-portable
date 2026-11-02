@@ -3,9 +3,9 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, linkSync, symlinkSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join, relative, isAbsolute } from 'node:path'
-import { AclWriteGrant } from '../../d/packages/sandbox/sandbox-windows-acl/src/grant.ts'
-import { AclSandbox } from '../../d/packages/sandbox/sandbox-windows-acl/src/index.ts'
-import { workspaceWriteSid, tempWriteSid } from '../../d/packages/sandbox/sandbox-windows-acl/src/workspace-sid.ts'
+import { AclWriteGrant } from '../../upstream/packages/sandbox/sandbox-windows-acl/src/grant.ts'
+import { AclSandbox } from '../../upstream/packages/sandbox/sandbox-windows-acl/src/index.ts'
+import { workspaceWriteSid, tempWriteSid } from '../../upstream/packages/sandbox/sandbox-windows-acl/src/workspace-sid.ts'
 import { work, project } from './environment.mjs'
 const base = join(work, 'qa'), root = mkdtempSync(join(base, 'official-acl-'))
 const portable = join(root, '便携包'), data = join(portable, 'data'), first = join(data, 'workspaces/原文件'), other = join(data, 'workspaces/其他工作区')

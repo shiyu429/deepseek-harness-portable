@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { LocalSandboxProvider } from '../../d/packages/sandbox/sandbox-local/src/index.ts'
-import { canonicalPath } from '../../d/packages/sandbox/sandbox/src/index.ts'
+import { LocalSandboxProvider } from '../../upstream/packages/sandbox/sandbox-local/src/index.ts'
+import { canonicalPath } from '../../upstream/packages/sandbox/sandbox/src/index.ts'
 const previous = process.env.DSH_PORTABLE_FILESYSTEM
 try {
   const provider = Object.create(LocalSandboxProvider.prototype) as LocalSandboxProvider

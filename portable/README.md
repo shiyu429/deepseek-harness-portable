@@ -1,6 +1,6 @@
 # DSH Portable 构建源码
 
-这是 DeepSeek Harness 官方 `dsh-v0.2.1-rc.5`（提交 `b830ec950faba0a46dda564be3e2d854afed94f1`）的第三方 Windows x64 便携构建。源码包中 `d/` 是包含便携改动的完整官方源码，`portable/` 是便携启动、Windows 固定授权、数据维护、构建和验收工具。
+这是 DeepSeek Harness 官方 `dsh-v0.2.1-rc.5`（提交 `b830ec950faba0a46dda564be3e2d854afed94f1`）的第三方 Windows x64 便携构建。源码包中 `upstream/` 是包含便携改动的完整官方源码，`portable/` 是便携启动、Windows 固定授权、数据维护、构建和验收工具。
 
 ## 构建
 
@@ -16,7 +16,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\portable\scripts\Build
 
 `packed-app/win-unpacked` 是内部 Electron 构建目录。构建最后将生成可交付的版本化程序目录，位置记录在 `delivery/build-result.json`。`node portable/scripts/verify-package.mjs` 校验内部打包文件及自带运行环境。用户运行便携版不需要构建所用的网络下载或编译工具。
 
-固定输入包括 `d/pnpm-lock.yaml`、`d/scripts/primary-runtime/lock.json`、`portable/upstream.lock.json`、`portable/msvc.lock.json`、`portable/extra-wheels.lock.json`、`portable/runtime-overrides.json` 和 `portable/production-pnpm-lock.yaml`。额外 Python wheel 逐项校验，npm 来自同一份锁定的官方 Node ZIP。刷新额外库需要显式运行 `scripts/capture-extra-wheels.py --refresh-lock`；普通构建冻结依赖锁。`refresh-runtime.mjs --refresh-lock` 是维护者明确修改源码后的更新操作，不用于普通重建。重建目标为相同源代码、版本和依赖集合；没有声称不同 Windows 构建环境能产生逐字节相同的 EXE/ZIP。
+固定输入包括 `upstream/pnpm-lock.yaml`、`upstream/scripts/primary-runtime/lock.json`、`portable/upstream.lock.json`、`portable/msvc.lock.json`、`portable/extra-wheels.lock.json`、`portable/runtime-overrides.json` 和 `portable/production-pnpm-lock.yaml`。额外 Python wheel 逐项校验，npm 来自同一份锁定的官方 Node ZIP。刷新额外库需要显式运行 `scripts/capture-extra-wheels.py --refresh-lock`；普通构建冻结依赖锁。`refresh-runtime.mjs --refresh-lock` 是维护者明确修改源码后的更新操作，不用于普通重建。重建目标为相同源代码、版本和依赖集合；没有声称不同 Windows 构建环境能产生逐字节相同的 EXE/ZIP。
 
 ## 实现位置
 
@@ -31,7 +31,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\portable\scripts\Build
 
 ## 覆盖更新
 
-根目录的 .NET Framework 启动器校验独立 `app/<version>-<digest>` 内的程序文件，再检查 `data` 的格式标识。更新包只覆盖程序及入口，不包含 `data` 或 `backups`；无需数据备份或迁移。程序版本号与数据格式标识分离。只允许相同、经过验证的数据格式；未知、损坏或不同格式的记录会阻止官方应用启动。首次从 1.1.0 覆盖时识别其已有格式，不转换会话、凭据或数据库。
+根目录的 .NET Framework 启动器校验独立 `app/bin` 内的程序文件，再检查 `data` 的格式标识。更新包只覆盖程序及入口，不包含 `data` 或 `backups`；无需数据备份或迁移。程序版本号与数据格式标识分离。只允许相同、经过验证的数据格式；未知、损坏或不同格式的记录会阻止官方应用启动。首次从 1.1.0 覆盖时识别其已有格式，不转换会话、凭据或数据库。
 
 `data-contract.json` 将允许的数据格式绑定到已经核对的官方提交。升级上游提交前必须审核数据读取与写入兼容性并补充测试；不能只改便携版本号或扩大允许列表。检查失败不创建缓存、不写数据；正常应用启动仍会保存运行位置与格式标识，修复受管理依赖的程序资源路径。维护中心验证切换完成后，清理可确认归属的旧程序；被占用的文件留有清理记录供重试，不复制旧用户数据。
 
@@ -39,16 +39,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\portable\scripts\Build
 
 便携 data 根目录保护 DACL 继承，子项保留继承；Everyone/登录 SID 的宽泛允许写项被收窄，Authenticated Users 保留跨账户访问。所选电脑工作区仅使用官方授权及便携授权前检查，不添加 data 的跨账户权限。读取、网络及并发替换不属于完整隔离保证。
 
-`tests/` 包含启动和维护组件测试；上游路径测试在 `d/packages/util/home-paths/tests/portable.spec.ts`，官方模式及真实 Windows 权限验收在 `scripts/check-official-sandbox.mts`。桌面模拟服务及搬移验收在 `scripts/*probe.mjs`。只使用虚构密钥。
+`tests/` 包含启动和维护组件测试；上游路径测试在 `upstream/packages/util/home-paths/tests/portable.spec.ts`，官方模式及真实 Windows 权限验收在 `scripts/check-official-sandbox.mts`。桌面模拟服务及搬移验收在 `scripts/*probe.mjs`。只使用虚构密钥。
 
-许可与使用范围见本目录 `LICENSE`、官方 `d/LICENSE`、官方和各依赖的许可证，以及成品中文使用说明。本项目不是官方发行包。
+许可与使用范围见本目录 `LICENSE`、官方 `upstream/LICENSE`、官方和各依赖的许可证，以及成品中文使用说明。本项目不是官方发行包。
 
 ## 公开发行
 
 完成必要的实际检查后，运行：
 
 ```powershell
-node portable/scripts/release.mjs --public --out=outputs/1.3.0
+node portable/scripts/release.mjs --public --out=outputs/1.3.1
 ```
 
 只生成最新完整版 ZIP 和 SHA256SUMS.txt；供 GitHub 提交的源码目录位置记录在 `delivery/public-source.json`。公开导出不携带用户 data、缓存、构建产物、内部交接文档或测试报告。正式上传前检查源码与归档清单。构建用的单元测试代码属于源码，实际机器检查记录只保存在本地。
+
+1.3.1 的程序槽位使用短路径 `app/bin`，程序版本和完整 SHA-256 保存在清单中。维护工具持有独占锁，先保存可续装状态，再替换程序；出现中断时阻止启动并继续安装。WindowsPaths.cs 对内部文件读写添加扩展路径前缀，公开路径和子进程参数保持普通绝对路径。组件不写系统长路径策略。ZIP 顶层目录名为 DSH；构建限制最长物理相对文件路径，Windows 路径回归测试使用未声明长路径支持的旧式 Win32 解压接口。

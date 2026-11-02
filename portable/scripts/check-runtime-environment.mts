@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, existsSync } from 'node:fs'
 import { join, relative, isAbsolute } from 'node:path'
 import { execFileSync } from 'node:child_process'
-import { AclWriteGrant, AclSandbox, workspaceWriteSid, tempWriteSid } from '../../d/packages/sandbox/sandbox-windows-acl/src/index.ts'
+import { AclWriteGrant, AclSandbox, workspaceWriteSid, tempWriteSid } from '../../upstream/packages/sandbox/sandbox-windows-acl/src/index.ts'
 import { work, project } from './environment.mjs'
 
 const base = join(work, 'qa'), root = mkdtempSync(join(base, 'environment-'))

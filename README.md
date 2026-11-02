@@ -6,7 +6,7 @@ Windows x64 · USB / 移动硬盘 · Node.js / Python / pnpm / npm / PowerShell 
 
 [下载最新版](https://github.com/shiyu429/deepseek-harness-portable/releases/latest) · [English](#english) · [构建说明](portable/README.md)
 
-DeepSeek Harness Portable 是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的第三方便携构建。保留官方聊天界面、模型接入、工具、会话与插件架构，把运行依赖和应用数据放进同一个文件夹。当前便携版本 **1.3.0**。
+DeepSeek Harness Portable 是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的第三方便携构建。保留官方聊天界面、模型接入、工具、会话与插件架构，把运行依赖和应用数据放进同一个文件夹。当前便携版本 **1.3.1**。
 
 ## 为什么使用 DSH便携版
 
@@ -20,7 +20,7 @@ DeepSeek Harness Portable 是基于 [DeepSeek Harness](https://github.com/deepse
 
 ## 三步开始
 
-1. 在 Releases 下载最新的 `DSH-Portable-1.3.0-win-x64.zip`，解压到可写目录，建议靠近盘根目录。
+1. 在 Releases 下载最新的 `DSH-Portable-1.3.1-win-x64.zip`，将其中的 `DSH` 文件夹解压到可写目录，建议靠近盘根目录。
 2. 双击 `DSH Portable.exe`，在官方设置界面配置模型服务及 API Key。
 3. 选择工作区并开始使用。需要更新或检查程序时打开 `DSH 维护工具.exe`。
 
@@ -37,6 +37,8 @@ data/                   聊天、凭据、设置、插件和工作文件
 
 维护中心接受最新完整版 ZIP，检查兼容性及文件完整性后更新。也可完整退出后解压合并程序文件，保留原有 `data`；不要删除整个旧目录。只支持已确认兼容的数据格式，未知格式会停止更新。
 
+1.3.1 使用短程序路径和不依赖系统长路径策略的启动/维护读写，避免常见解压位置下的文件遗漏；检查页面显示实时进度及清晰结果。外部解压工具仍可能限制过深的目录，建议使用短路径。
+
 ## 权限与适用范围
 
 支持 Windows 10/11 x64，需要 .NET Framework 4.8。NTFS 沿用官方的仅可查看、工作区内修改和完全访问规则；工作区受限进程授权按官方设计保留，退出不做权限回滚。
@@ -49,7 +51,7 @@ Windows 受限令牌下部分系统接口及 Schannel 网络客户端受上游�
 
 ## 源码与上游
 
-`d/` 为包含便携改动的上游源码，`portable/` 为启动、维护、运行时兼容与构建代码。构建步骤见 [portable/README.md](portable/README.md)。上游基线为 `dsh-v0.2.1-rc.5`，提交 `b830ec950faba0a46dda564be3e2d854afed94f1`，没有自动跟随上游更新。
+`upstream/` 为包含便携改动的上游源码，`portable/` 为启动、维护、运行时兼容与构建代码。构建步骤见 [portable/README.md](portable/README.md)。上游基线为 `dsh-v0.2.1-rc.5`，提交 `b830ec950faba0a46dda564be3e2d854afed94f1`，没有自动跟随上游更新。
 
 本项目不是 DeepSeek 官方发布的 Windows 安装包。保留上游及依赖许可证；具体归属见源码 LICENSE 与便携包 `app/说明与许可`。
 
@@ -57,7 +59,7 @@ Windows 受限令牌下部分系统接口及 Schannel 网络客户端受上游�
 
 ## English
 
-**DeepSeek Harness Portable brings DSH, its runtimes, and your application data together in one folder.** This community Windows x64 build preserves the upstream interface, model integrations, tools, sessions, and plugin architecture. Current portable version: **1.3.0**.
+**DeepSeek Harness Portable brings DSH, its runtimes, and your application data together in one folder.** This community Windows x64 build preserves the upstream interface, model integrations, tools, sessions, and plugin architecture. Current portable version: **1.3.1**.
 
 ### What it provides
 
@@ -71,9 +73,11 @@ Windows 受限令牌下部分系统接口及 Schannel 网络客户端受上游�
 
 ### Quick start
 
-Download the latest full ZIP from [Releases](https://github.com/shiyu429/deepseek-harness-portable/releases/latest), extract it into a writable folder, and launch `DSH Portable.exe`. Configure your model service and API key in the upstream interface, then choose a workspace. Open `DSH 维护工具.exe` for maintenance.
+Download the latest full ZIP from [Releases](https://github.com/shiyu429/deepseek-harness-portable/releases/latest), extract its `DSH` folder into a writable location, and launch `DSH Portable.exe`. Configure your model service and API key in the upstream interface, then choose a workspace. Open `DSH 维护工具.exe` for maintenance.
 
 Exit completely before copying the entire folder or updating. Keep `data`; local computer workspaces do not travel with the USB drive. The maintenance center accepts a compatible full ZIP and validates it before switching programs. Unknown data formats are rejected.
+
+Version 1.3.1 shortens bundled paths and uses explicit extended Windows paths for launcher/maintenance I/O, without changing system policy. Verification shows live file counts and results. External extractors can still limit deeply nested destinations; use a short location.
 
 ### Requirements and limits
 
@@ -85,6 +89,6 @@ Credentials retain the upstream format without added encryption. Protect the ent
 
 ### Build and attribution
 
-The `d` directory contains the modified upstream sources, and `portable` contains the launcher, maintenance UI, runtime compatibility code, and build scripts. See [build instructions](portable/README.md). The upstream baseline is `dsh-v0.2.1-rc.5`, commit `b830ec950faba0a46dda564be3e2d854afed94f1`.
+The `upstream` directory contains the modified upstream sources, and `portable` contains the launcher, maintenance UI, runtime compatibility code, and build scripts. See [build instructions](portable/README.md). The upstream baseline is `dsh-v0.2.1-rc.5`, commit `b830ec950faba0a46dda564be3e2d854afed94f1`.
 
 This is a third-party portable build, not an official DeepSeek Windows installer. Upstream and dependency licenses are preserved in the source tree and `app/说明与许可`.

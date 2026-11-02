@@ -9,6 +9,9 @@ using System.Security.Cryptography;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using File = WindowsFile;
+using Directory = WindowsDirectory;
+using FileStream = WindowsFileStream;
 
 // This launcher validates immutable program files and compatibility before starting any data writer.
 static class Launcher {
@@ -73,11 +76,11 @@ static class Launcher {
         }
         if (!(contract is string) || (string)contract != Text(manifest, "dataContract")) throw new IOException("此更新与现有数据格式不兼容，已停止启动；原数据未修改。请使用兼容的数据格式版本。");
     }
-    internal static string Verify(string root, StartupWindow waiting = null) {
+    internal static string Verify(string root, StartupWindow waiting = null, Action<string,int,int> progress = null) {
         if (File.Exists(Path.Combine(root, "app/.update.pending.json"))) throw new IOException("程序更新尚未完成，请打开 DSH 维护工具完成更新；data 保持原位。");
-        return VerifyProgram(root, Read(MaintenanceEngine.Pointer(root)), null, true, waiting);
+        return VerifyProgram(root, Read(MaintenanceEngine.Pointer(root)), null, true, waiting, progress);
     }
-    internal static string VerifyProgram(string root, IDictionary<string,object> pointer, string programOverride, bool checkData, StartupWindow waiting = null) {
+    internal static string VerifyProgram(string root, IDictionary<string,object> pointer, string programOverride, bool checkData, StartupWindow waiting = null, Action<string,int,int> progress = null) {
         CheckedPaths.Clear();
         NoLinks(root, root);
         string pointerFile = MaintenanceEngine.Pointer(root); NoLinks(pointerFile, root);
@@ -93,13 +96,24 @@ static class Launcher {
         int checkedFiles = 0, fileCount = ((IList)files).Count;
         foreach (object item in (IList)files) {
             var entry = item as IDictionary<string,object>; if (entry == null) throw new IOException("程序校验条目无效。");
-            string name = Text(entry, "path"), file = Safe(program, name); NoLinks(file, root);
-            if (!seen.Add(file) || !File.Exists(file) || new FileInfo(file).Length != Convert.ToInt64(entry["bytes"]) || Hash(file) != Text(entry, "sha256")) throw new IOException("程序更新不完整或文件损坏：" + name + "。请重新覆盖完整更新包；不要删除 data。");
-            if (waiting != null && (++checkedFiles % 64 == 0 || checkedFiles == fileCount)) waiting.Update("正在检查启动文件  " + checkedFiles + " / " + fileCount, checkedFiles, fileCount);
+            string name = Text(entry, "path"), file = Safe(program, name);
+            try {
+                NoLinks(file, root);
+                if (!seen.Add(file) || !File.Exists(file) || WindowsPaths.Length(file) != Convert.ToInt64(entry["bytes"]) || Hash(file) != Text(entry, "sha256")) throw new IOException("程序文件缺失、无法读取或校验不符：" + name + "\n请使用完整便携 ZIP 重新解压或在维护中心安装，保留 data。");
+            } catch (DirectoryNotFoundException error) { throw MissingFile(name, file, error); }
+              catch (FileNotFoundException error) { throw MissingFile(name, file, error); }
+            checkedFiles++;
+            if (checkedFiles % 64 == 0 || checkedFiles == fileCount) {
+                if (waiting != null) waiting.Update("正在检查启动文件  " + checkedFiles + " / " + fileCount, checkedFiles, fileCount);
+                if (progress != null) progress(name, checkedFiles, fileCount);
+            }
         }
         string manifestFile = Path.Combine(program, "portable.json"); NoLinks(manifestFile, root); var manifest = Read(manifestFile);
         if (!seen.Contains(manifestFile) || !seen.Contains(Path.Combine(program, "DSH Portable.exe")) || !FormatOne(manifest["payloadLayout"]) || Text(manifest, "portableVersion") != Text(pointer, "portableVersion") || Text(manifest, "dataContract") != Text(pointer, "dataContract")) throw new IOException("程序更新尚未完整覆盖，已停止启动。");
         if (checkData) CheckData(root, manifest); return program;
+    }
+    static IOException MissingFile(string name, string fullPath, Exception error) {
+        return new IOException("程序包缺少文件：" + name + "\n完整路径：" + fullPath + "\n解压工具可能跳过了长路径文件。请使用新版完整版重新解压，或在维护中心安装完整版；保留 data。", error);
     }
     [STAThread]
     public static int Main(string[] args) {
@@ -117,6 +131,7 @@ static class Launcher {
             if (args.Length > 0 && args[0] == "--finish-update") return MaintenanceEngine.Finish(args[1], args.Length > 2 ? args[2] : null);
             if (args.Length > 0 && args[0] == "--portable-apply-update") { MaintenanceEngine.Prepare(root, args[1], true); return 0; }
             if (args.Length > 0 && args[0] == "--portable-resume-update") { MaintenanceEngine.Resume(root); return 0; }
+            if (args.Length > 0 && args[0] == "--portable-maintenance-check-smoke") return MaintenanceForm.Smoke(root, args[1], true);
             if (args.Length > 0 && args[0] == "--portable-maintenance-smoke") return MaintenanceForm.Smoke(root, args[1]);
             if (args.Length > 0 && args[0] == "--portable-startup-smoke") return StartupWindow.Smoke(args[1]);
             if(args.Length==2&&args[0]=="--portable-maintenance-host"){root=Path.GetFullPath(args[1]);Application.Run(new MaintenanceForm(root));return 0;}

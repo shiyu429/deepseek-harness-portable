@@ -20,7 +20,7 @@ static class EmbeddedIcon {
         byte[] bytes = new byte[size]; Marshal.Copy(data, bytes, 0, size); return bytes;
     }
     public static byte[] Extract(string file) {
-        IntPtr module = LoadLibraryExW(Path.GetFullPath(file), IntPtr.Zero, 0x22);
+        IntPtr module = LoadLibraryExW(WindowsPaths.Extended(file), IntPtr.Zero, 0x22);
         if (module == IntPtr.Zero) throw new IOException("无法读取应用的图标资源。");
         try {
             IntPtr groupName = IntPtr.Zero;
