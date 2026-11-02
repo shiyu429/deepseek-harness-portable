@@ -1,7 +1,7 @@
 /** Portable workspace references and runtime-only relocation of historical paths. */
 import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 
 const PREFIX = 'dsh-portable:/'
@@ -13,7 +13,8 @@ function within(root: string, path: string): boolean {
 
 function portableRoot(): string | undefined {
   const root = process.env.DSH_PORTABLE_ROOT
-  return root === undefined ? undefined : resolve(root)
+  // Match the realpath spelling used by workspace/session identity comparisons.
+  return root === undefined ? undefined : realpathSync.native(root)
 }
 
 /**
