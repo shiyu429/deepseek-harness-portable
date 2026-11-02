@@ -98,7 +98,6 @@ function prepare(root, inherited = process.env) {
       current = path.dirname(current);
     }
   }
-  for (const folder of Object.values(dirs)) fs.mkdirSync(folder, { recursive: true });
   const helper = path.join(programRoot, 'resources', 'portable', 'native-helper.exe');
   const primary = path.join(programRoot, 'resources', 'runtime', 'primary-runtime', 'dependencies');
   const node = path.join(primary, 'node', 'bin', 'node.exe');
@@ -108,6 +107,15 @@ function prepare(root, inherited = process.env) {
   for (const executable of [helper, node, python, pwsh, path.join(msvc, 'msvcp140.dll'), path.join(msvc, 'vcruntime140.dll')]) {
     if (!fs.statSync(executable).isFile()) throw new Error('便携包缺少运行文件：' + path.basename(executable));
   }
+  // Admission has already verified that unmarked data is empty. Commit its
+  // format before creating runtime folders: a later helper/lock failure must
+  // leave an initialized package that can be retried, not an unrecognized data tree.
+  if (manifest.dataContract && !fs.existsSync(path.join(dirs.data, 'portable-state.json'))) {
+    atomicJson(path.join(dirs.data, 'portable-state.json'), {
+      format: 1, roots: [], release: manifest.portableVersion, dataContract: manifest.dataContract,
+    });
+  }
+  for (const folder of Object.values(dirs)) fs.mkdirSync(folder, { recursive: true });
   const systemRoot = inherited.SystemRoot || inherited.SYSTEMROOT || 'C:\\Windows';
   const systemPath = [path.join(systemRoot, 'System32'), systemRoot, path.join(systemRoot, 'System32', 'Wbem'), path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0')];
   const hostPath = (inherited.PATH || inherited.Path || '').split(';').map(item=>item.trim().replace(/^"|"$/g,'')).filter(item=>/^[a-z]:[\\/]/i.test(item) && fs.existsSync(item));
