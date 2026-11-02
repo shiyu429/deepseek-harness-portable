@@ -10,6 +10,7 @@ import { upstream, work } from './environment.mjs';
 const require = createRequire(resolve(upstream, 'package.json'));
 const { _electron } = require(resolve(upstream, 'node_modules/.pnpm/playwright@1.61.1/node_modules/playwright'));
 const root = resolve(process.argv.find(arg => arg.startsWith('--root='))?.slice(7) || join(work, 'qa/便携 实测 (中文)/DSH Portable fresh'));
+const chatOnly = process.argv.includes('--chat-only');
 const fullAccess = process.argv.includes('--full-access');
 const accountAccess = process.argv.includes('--account-access') || fullAccess;
 const persistentWorkspace = process.argv.includes('--persistent-workspace') || process.argv.includes('--official-workspace');
@@ -62,13 +63,13 @@ const server = createServer(async (request, response) => {
     return;
   }
   const tool = hasWrite ? 'pwsh' : hasRead ? 'write' : 'read';
-  const complete = title || hasShell;
+  const complete = chatOnly || title || hasShell;
   const shellArgs = { description: '验证便携 PowerShell 和工作区写入保护', command: `Set-Content -LiteralPath '${shellFile}' -Value 'portable-shell-ok' -ErrorAction Stop; $PSVersionTable.PSVersion.ToString(); try { Set-Content -LiteralPath '${deniedFile.replaceAll("'", "''")}' -Value 'escape' -ErrorAction Stop; 'ESCAPED' } catch { 'SIBLING-DENIED' }` };
   const block = complete ? { type: 'text', text: '' } : { type: 'tool_use', id: 'portable_' + tool + '_' + token, name: tool, input: {} };
   const events = [
     { type: 'message_start', message: { id: 'msg_portable_' + calls, type: 'message', role: 'assistant', model: body.model, content: [], usage: { input_tokens: 10, output_tokens: 0 } } },
     { type: 'content_block_start', index: 0, content_block: block },
-    { type: 'content_block_delta', index: 0, delta: complete ? { type: 'text_delta', text: title ? '便携原文件验证' : '便携版模拟聊天验证通过，文件已经保存。' } : { type: 'input_json_delta', partial_json: JSON.stringify(tool === 'pwsh' ? shellArgs : tool === 'read' ? { file_path: filename } : { file_path: filename, content: expectedContent }) } },
+    { type: 'content_block_delta', index: 0, delta: complete ? { type: 'text_delta', text: title ? '便携原文件验证' : chatOnly ? '新建工作区对话验证通过。' : '便携版模拟聊天验证通过，文件已经保存。' } : { type: 'input_json_delta', partial_json: JSON.stringify(tool === 'pwsh' ? shellArgs : tool === 'read' ? { file_path: filename } : { file_path: filename, content: expectedContent }) } },
     { type: 'content_block_stop', index: 0 },
     { type: 'message_delta', delta: { stop_reason: complete ? 'end_turn' : 'tool_use' }, usage: { output_tokens: 10 } },
     { type: 'message_stop' },
@@ -80,7 +81,9 @@ const server = createServer(async (request, response) => {
 await new Promise(done => server.listen(0, '127.0.0.1', done));
 const environment = { ...process.env, DEEPSEEK_BASE_URL: `http://127.0.0.1:${server.address().port}` };
 delete environment.ELECTRON_RUN_AS_NODE; delete environment.NODE_OPTIONS; delete environment.DEEPSEEK_API_KEY;
-const app = await _electron.launch({ executablePath: join(root, 'DSH Portable.exe'), env: environment, timeout: 90000 });
+// The root native launcher proxies a child process; Playwright must attach to
+// the actual Electron process. Its bootstrap still performs package/data admission.
+const app = await _electron.launch({ executablePath: join(programRoot, 'DSH Portable.exe'), env: environment, timeout: 90000 });
 let terminated = false;
 app.process().stderr?.on('data', bytes => process.stderr.write(bytes.toString().replace(/([?&]token=)[^\s]+/g, '$1[redacted]')));
 try {
@@ -133,6 +136,12 @@ try {
     const editor = page.locator('[contenteditable="true"], textarea').first();
     await editor.fill(`请读取并修改工作区里的原文件 ${filename}，然后回复完成。`);
     await editor.press('Enter');
+    if (chatOnly) {
+      await page.getByText('新建工作区对话验证通过。', { exact: false }).last().waitFor({ timeout: 60000 });
+      assert.ok(calls > 0);
+      await page.screenshot({ path: join(work, 'qa/workspace-chat-success.png') });
+      console.log('NEW_INTERNAL_WORKSPACE_CHAT', true);
+    } else {
     for (let attempt = 0; attempt < 60; attempt++) {
       if (await readFile(join(workspace, filename), 'utf8') === expectedContent) break;
       await page.waitForTimeout(1000);
@@ -186,6 +195,7 @@ try {
       if (persistentWorkspace) assert.deepEqual(inspect(), retainedPermissions);
       await assertNoLeases();
       console.log('ABRUPT_EXIT_NO_PERMISSION_RESTORATION_NEEDED', true);
+    }
     }
   }
 } catch (error) {
