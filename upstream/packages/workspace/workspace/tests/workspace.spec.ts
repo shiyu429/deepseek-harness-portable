@@ -192,6 +192,27 @@ afterEach(async () => {
 })
 
 describe('WorkspaceRegistry lifecycle and bootstrap', () => {
+  it.skipIf(process.platform !== 'win32')('attaches and restores a session in a portable-root workspace after a lowercase launch', async () => {
+    const dir = await makeDir('中文 workk')
+    const previousRoot = process.env.DSH_PORTABLE_ROOT
+    process.env.DSH_PORTABLE_ROOT = base.toLowerCase()
+    await mkdir(join(base, 'data'))
+    await writeFile(join(base, 'data/portable-state.json'), JSON.stringify({ format: 1, roots: [base] }))
+    try {
+      const result = await harness({ liveSessions: [header('portable', dir)] })
+      const workspace = await result.registry.create(dir)
+      await workspace.attachSession(SessionId('portable'))
+      expect(workspace.path).toBe(dir)
+      expect(workspace.sessionIds).toEqual(['portable'])
+      expect((await result.registry.create(dir)).id).toBe(workspace.id)
+      expect((await result.registry.resolveByPath(dir))?.id).toBe(workspace.id)
+      const restored = await harness({ pool: result.pool, sessions: [header('portable', dir)] })
+      expect(restored.registry.get(workspace.id)?.sessionIds).toEqual(['portable'])
+    } finally {
+      if (previousRoot === undefined) delete process.env.DSH_PORTABLE_ROOT
+      else process.env.DSH_PORTABLE_ROOT = previousRoot
+    }
+  })
   it('stays pending without sessionPersistence and never opens or marks the domain', async () => {
     const pool = new MemoryMediaPool()
     const ctx = await storageContext(pool)
