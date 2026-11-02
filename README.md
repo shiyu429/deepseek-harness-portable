@@ -42,11 +42,19 @@
 
 > **推荐将程序和需要受限写入的工作区放在 NTFS 磁盘上。** FAT32/exFAT 可以运行，但采用当前 Windows 账户权限，其命令写入范围不限于所选工作区。
 
+## 1.3.3 · 插件跟着目录一起走
+
+修复 1.3.2 在移动目录或更换盘符后安装插件时出现的 `hoistedDep… is not valid JSON`：依赖清单兼容 JSON 与旧 YAML，桌面路径修复保留 pnpm 的原生格式。再次安装时，项目内存储和依赖位置按当前目录解析，不需要手动改路径记录或删除插件。
+
+路径修复只处理本程序管理的依赖元数据，保留其他字段，不批量替换聊天正文。pnpm 继续使用项目内缓存与复制布局，不改宿主全局配置，也不通过放宽文件夹权限解决安装错误。第三方插件声明的外部工具、网络与版本要求仍由插件本身决定。
+
+本次已验证 NTFS 上 C→D→C 整包搬迁后的桌面插件安装、启用及重启；另在 Windows 托管测试机的真实 FAT32 文件系统虚拟磁盘上，完成 R→S→T 换盘符、安装/卸载、离线重装和命令入口检查，包含 dsh-pet 0.4.0。FAT32 虚拟磁盘检查不等于实体 U 盘、Windows 10/11 跨机或强拔验收；[可查看手动检查结果](https://github.com/shiyu429/deepseek-harness-portable/actions/runs/41496087224)。
+
 ## 三步开始
 
 **① 下载并解压**
 
-从 [发布页面](https://github.com/shiyu429/deepseek-harness-portable/releases/latest) 下载完整 ZIP，把其中的 `DSH` 文件夹解压到可写的短路径，例如 `D:\DSH`。请完整解压后启动，不要在 ZIP 内直接运行，也不要只复制 EXE。当前版本：**1.3.2**。
+从 [发布页面](https://github.com/shiyu429/deepseek-harness-portable/releases/latest) 下载完整 ZIP，把其中的 `DSH` 文件夹解压到可写的短路径，例如 `D:\DSH`。请完整解压后启动，不要在 ZIP 内直接运行，也不要只复制 EXE。当前版本：**1.3.3**。
 
 **② 配置模型服务**
 
