@@ -315,7 +315,9 @@ function repairProfileMetadata(dirs, roots, programRoots = [], programRoot = dir
       if (JSON.stringify(next) === JSON.stringify(document)) continue;
       const temp = filename + '.' + crypto.randomUUID() + '.tmp';
       try {
-        fs.writeFileSync(temp, name.endsWith('.json') ? JSON.stringify(next, null, 2) + '\n' : yaml.stringify(next), { flag: 'wx' });
+        // Keep pnpm 11's native JSON representation even though its filename
+        // ends in .yaml. The wrapper also accepts existing YAML from older starts.
+        fs.writeFileSync(temp, name.endsWith('.json') || name === 'node_modules/.modules.yaml' ? JSON.stringify(next, null, 2) + '\n' : yaml.stringify(next), { flag: 'wx' });
         const fd = fs.openSync(temp, 'r+'); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
         fs.renameSync(temp, filename); changed++;
       } finally { fs.rmSync(temp, { force: true }); }
