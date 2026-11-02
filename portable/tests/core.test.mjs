@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, cpSync, existsSync } from 'node:fs';
 import { resolve, join, relative, isAbsolute } from 'node:path';
 
 const require = createRequire(import.meta.url);
 const core = require('../runtime/core.cjs');
 const nativeFs = require('node:fs');
+const metadataYaml = resolve(import.meta.dirname,'../../upstream/apps/desktop/.desktop-build/targets/win-x64/dsh/node_modules/yaml');
 const fixtures = resolve(import.meta.dirname, '../../qa');
 mkdirSync(fixtures, { recursive: true });
 function fixture() {
@@ -189,4 +190,25 @@ test('moving a package repairs generated dependency paths without changing scrip
     assert.equal(core.readJson(join(profile, 'conversation.json')).text, history);
     assert.equal(core.repairProfileMetadata(dirs, [before, f.root]), 0);
   } finally { f.close(); }
+});
+
+test('desktop relocation accepts legacy modules YAML and writes pnpm-native JSON without losing metadata', {skip:!existsSync(metadataYaml)}, () => {
+  const f=fixture();
+  try {
+    const dirs=core.directories(f.root),profile=join(dirs.dsh,'profiles/default');
+    mkdirSync(join(profile,'node_modules'),{recursive:true});
+    const yamlDir=join(f.root,'resources/app.asar/dsh/node_modules/yaml');
+    cpSync(metadataYaml,yamlDir,{recursive:true});
+    writeFileSync(join(f.root,'resources/app.asar/dsh/package.json'),'{}');
+    const yaml=require(yamlDir),before='E:\\旧目录 (测试)\\DSH';
+    const document={storeDir:before+'\\data\\dsh\\profiles\\default\\.dsh-cache\\pnpm\\store\\v11',virtualStoreDir:before+'\\data\\dsh\\profiles\\default\\node_modules\\.pnpm',nodeLinker:'hoisted',hoistedLocations:{'fixture@1.0.0':['node_modules/fixture']}};
+    const file=join(profile,'node_modules/.modules.yaml');writeFileSync(file,yaml.stringify(document));
+    assert.equal(core.repairProfileMetadata(dirs,[before,f.root]),1);
+    const result=JSON.parse(readFileSync(file,'utf8'));
+    assert.equal(result.storeDir,join(profile,'.dsh-cache/pnpm/store/v11'));
+    assert.equal(result.virtualStoreDir,join(profile,'node_modules/.pnpm'));
+    assert.deepEqual(result.hoistedLocations,document.hoistedLocations);
+    assert.equal(result.nodeLinker,'hoisted');
+    assert.equal(core.repairProfileMetadata(dirs,[before,f.root]),0);
+  }finally{f.close();}
 });
