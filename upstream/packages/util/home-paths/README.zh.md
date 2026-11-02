@@ -26,7 +26,7 @@ kind: "package-library"
 
 当包必须与 harness 的其他部分就用户数据存放位置达成一致时使用这些辅助函数：先解析一次主目录，再从中派生所有子路径。
 
-便携构建还会根据程序位置记录解析 `dsh-portable:/` 工作区引用和历史路径。外部工作区必须同时匹配原电脑及目录身份，这些记录保存在便携 data 中；另一台电脑上存在相同路径并不足以通过检查。身份缺失或不匹配时停止文件操作，直到用户明确选择文件夹并记录实际位置。内部工作区自动按新位置解析。`resolvePortablePath`、`encodePortablePath`、`rememberPortableWorkspace`、`assertPortableWorkspaceIdentity` 在没有 `DSH_PORTABLE_ROOT` 时保留普通安装行为；不要让未修改的 npm 安装共享便携数据。
+便携构建还会根据程序位置记录解析 `dsh-portable:/` 工作区引用和历史路径。外部工作区必须同时匹配原电脑及目录身份，这些记录保存在便携 data 中；另一台电脑上存在相同路径并不足以通过检查。身份缺失或不匹配时停止文件操作，直到用户明确选择文件夹并记录实际位置。内部工作区自动按新位置解析。 便携根目录使用文件系统的原生规范路径，Windows 启动路径的大小写差异不会改变工作区与会话 cwd 的对应关系。`resolvePortablePath`、`encodePortablePath`、`rememberPortableWorkspace`、`assertPortableWorkspaceIdentity` 在没有 `DSH_PORTABLE_ROOT` 时保留普通安装行为；不要让未修改的 npm 安装共享便携数据。
 
 ### 解析主目录
 

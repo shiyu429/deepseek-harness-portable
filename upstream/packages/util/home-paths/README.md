@@ -26,7 +26,7 @@ English | [中文](README.zh.md)
 
 Use these helpers wherever a package must agree with the rest of the harness about where user data lives: resolve the home once, then derive every child path from it.
 
-The portable build additionally resolves `dsh-portable:/` workspace references and historical paths against its package-location history. External workspaces require both the original computer and directory identity, stored under portable data; a matching path on another computer is insufficient. Missing or mismatched identities stop file operations until explicit folder selection records the actual location. Internal workspaces rebase automatically. `resolvePortablePath`, `encodePortablePath`, `rememberPortableWorkspace`, and `assertPortableWorkspaceIdentity` retain ordinary behavior when `DSH_PORTABLE_ROOT` is absent; portable data must not be shared with an unmodified npm installation.
+The portable build additionally resolves `dsh-portable:/` workspace references and historical paths against its package-location history. External workspaces require both the original computer and directory identity, stored under portable data; a matching path on another computer is insufficient. Missing or mismatched identities stop file operations until explicit folder selection records the actual location. Internal workspaces rebase automatically. The portable root uses the native filesystem spelling, so a differently cased Windows launch path still matches the canonical session cwd. `resolvePortablePath`, `encodePortablePath`, `rememberPortableWorkspace`, and `assertPortableWorkspaceIdentity` retain ordinary behavior when `DSH_PORTABLE_ROOT` is absent; portable data must not be shared with an unmodified npm installation.
 
 ### Resolving the home
 
