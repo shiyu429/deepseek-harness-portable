@@ -22,6 +22,9 @@ if(phase==='initial'){
  }
  mkdirSync(join(root,'profile/vendor'),{recursive:true});
  writeFileSync(join(root,'profile/package.json'),JSON.stringify({name:'portable-profile-proof',private:true}));
+ // Match the desktop profile's actual peer policy, without repeating CLI
+ // config flags (pnpm treats repeated values as an array in its lockfile).
+ writeFileSync(join(root,'profile/pnpm-workspace.yaml'),'packages:\n  - .\nnodeLinker: hoisted\nautoInstallPeers: false\n');
  for(const [name,version] of [['portable-cli-one','1.0.0'],['portable-cli-two','1.0.0']]){
   const base=join(root,'profile/vendor',name);mkdirSync(join(base,'package'),{recursive:true});
   writeFileSync(join(base,'package/package.json'),JSON.stringify({name,version,main:'index.js',bin:{[name]:'cli.js'}}));
@@ -36,12 +39,10 @@ const record=JSON.parse(readFileSync(owner));assert.equal(record.test,'pnpm-port
 const node=join(root,'runtime/node/bin/node.exe'),wrapper=join(root,'runtime/pnpm/bin/pnpm.mjs'),profile=join(root,'profile');
 const yaml=createRequire(import.meta.url)(join(root,'runtime/pnpm/dist/node_modules/yaml'));
 const home=join(root,'home');mkdirSync(home,{recursive:true});
-// The component fixture omits the desktop Host's peer packages. Keep that
-// fixture policy consistent for subsequent add/remove and offline reinstall.
-for(const n of ['npmrc','npmrc-global'])writeFileSync(join(home,n),n==='npmrc'?'auto-install-peers=false\n':'');
+for(const n of ['npmrc','npmrc-global'])writeFileSync(join(home,n),'');
 const env={...process.env,HOME:home,USERPROFILE:home,APPDATA:home,LOCALAPPDATA:home,TEMP:home,TMP:home,PNPM_HOME:join(home,'pnpm'),npm_config_userconfig:join(home,'npmrc'),npm_config_globalconfig:join(home,'npmrc-global'),npm_config_manage_package_manager_versions:'false',PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS:'false',NO_UPDATE_NOTIFIER:'1',CI:'true'};
 delete env.ELECTRON_RUN_AS_NODE;delete env.NODE_OPTIONS;delete env.NODE_PATH;
-function run(params){const r=spawnSync(node,[wrapper,'--config.auto-install-peers=false',...params],{cwd:profile,env,encoding:'utf8',windowsHide:true,timeout:90000});assert.equal(r.status,0,(r.stdout||'')+'\n'+(r.stderr||r.error?.message||''));return r.stdout;}
+function run(params){const r=spawnSync(node,[wrapper,...params],{cwd:profile,env,encoding:'utf8',windowsHide:true,timeout:90000});assert.equal(r.status,0,(r.stdout||'')+'\n'+(r.stderr||r.error?.message||''));return r.stdout;}
 function requirePkg(name){const r=spawnSync(node,['-p','require('+JSON.stringify(name)+')'],{cwd:profile,env,encoding:'utf8',windowsHide:true});assert.equal(r.status,0,r.stderr);assert.equal(r.stdout.trim(),name);}
 if(phase==='initial')run(['add','./vendor/portable-cli-one.tgz','--offline','--ignore-scripts','--reporter=append-only']);
 else{
@@ -50,7 +51,11 @@ else{
 }
 requirePkg('portable-cli-one');
 if(phase==='initial'&&args.includes('--real-plugin')) {
- run(['add','dsh-pet@0.4.0','--ignore-scripts','--config.auto-install-peers=false','--registry=https://registry.npmjs.org/','--reporter=append-only']);
+ run(['add','dsh-pet@0.4.0','--ignore-scripts','--registry=https://registry.npmjs.org/','--reporter=append-only']);
+ // pnpm 11's frozen-lockfile policy needs full registry metadata, whereas
+ // initial resolution fetches abbreviated metadata. Warm it online before
+ // asserting offline reinstall; retain the normal supply-chain checks.
+ run(['install','--frozen-lockfile','--ignore-scripts','--reporter=append-only']);
  record.realPlugin=true;
 }
 if(record.realPlugin){
